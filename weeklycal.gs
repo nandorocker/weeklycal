@@ -6,21 +6,21 @@ function createWeeklyTemplate() {
     // Daily events
     {
       title: "☀️ Morning Routine",
-      day: "Everyday",
+      day: "Weekdays",
       startTime: "09:30",
       duration: 150,
     }, // 2.5 hours
-    { title: "🍽️ Lunch", day: "Everyday", startTime: "12:00", duration: 45 },
-    { title: "🍽️ Dinner", day: "Everyday", startTime: "19:30", duration: 60 },
+    { title: "🍽️ Lunch", day: "Weekdays", startTime: "12:00", duration: 45 },
+    { title: "🍽️ Dinner", day: "Weekdays", startTime: "19:30", duration: 60 },
     {
       title: "🎉 Free time",
-      day: "Everyday",
+      day: "Weekdays",
       startTime: "20:30",
       duration: 195,
     },
     {
       title: "🌙 Wind down",
-      day: "Everyday",
+      day: "Weekdays",
       startTime: "23:30",
       duration: 60,
     },
@@ -42,59 +42,79 @@ function createWeeklyTemplate() {
     Friday: 5,
     Saturday: 6,
     Everyday: -1,
+    Weekdays: -2,
   };
 
   const today = new Date();
-  const startOfWeek = getStartOfWeek(today);
+  const currentDay = today.getDay();
+  const startOfWeek = new Date(today);
+  startOfWeek.setDate(today.getDate() - currentDay);
 
   events.forEach((event) => {
-    if (event.day === "Everyday") {
-      createDailyEvents(event, startOfWeek, calendar);
+    const dayOffset = daysOfWeek[event.day];
+
+    if (dayOffset === -2) {
+      // Loop through weekdays only (Monday to Friday)
+      for (let i = 1; i <= 5; i++) {
+        const eventDate = new Date(startOfWeek);
+        eventDate.setDate(startOfWeek.getDate() + i);
+
+        const startTime = new Date(eventDate);
+        startTime.setHours(
+          event.startTime.split(":")[0],
+          event.startTime.split(":")[1]
+        );
+
+        const endTime = new Date(startTime);
+        endTime.setMinutes(endTime.getMinutes() + event.duration);
+
+        // Check if event already exists
+        if (!isEventExists(calendar, event.title, startTime, endTime)) {
+          calendar.createEvent(event.title, startTime, endTime);
+          // Logger.log('Event Title:' + event.title + " | Start Time: " + startTime + " | End Time: " + endTime);
+        }
+      }
+    } else if (dayOffset === -1) {
+      // Loop through weekdays only (Monday to Friday)
+      for (let i = 1; i <= 5; i++) {
+        const eventDate = new Date(startOfWeek);
+        eventDate.setDate(startOfWeek.getDate() + i);
+
+        const startTime = new Date(eventDate);
+        startTime.setHours(
+          event.startTime.split(":")[0],
+          event.startTime.split(":")[1]
+        );
+
+        const endTime = new Date(startTime);
+        endTime.setMinutes(endTime.getMinutes() + event.duration);
+
+        // Check if event already exists
+        if (!isEventExists(calendar, event.title, startTime, endTime)) {
+          calendar.createEvent(event.title, startTime, endTime);
+          // Logger.log('Event Title:' + event.title + " | Start Time: " + startTime + " | End Time: " + endTime);
+        }
+      }
     } else {
-      createEvent(event, startOfWeek, calendar);
+      const eventDate = new Date(startOfWeek);
+      eventDate.setDate(startOfWeek.getDate() + dayOffset);
+
+      const startTime = new Date(eventDate);
+      startTime.setHours(
+        event.startTime.split(":")[0],
+        event.startTime.split(":")[1]
+      );
+
+      const endTime = new Date(startTime);
+      endTime.setMinutes(endTime.getMinutes() + event.duration);
+
+      // Check if event already exists
+      if (!isEventExists(calendar, event.title, startTime, endTime)) {
+        calendar.createEvent(event.title, startTime, endTime);
+        // Logger.log('Event Title:' + event.title + " | Start Time: " + startTime + " | End Time: " + endTime);
+      }
     }
   });
-}
-
-function getStartOfWeek(date) {
-  const day = date.getDay();
-  const startOfWeek = new Date(date);
-  startOfWeek.setDate(date.getDate() - day + (day === 0 ? -6 : 1)); // Adjusts for Monday start
-  return startOfWeek;
-}
-
-function createDailyEvents(event, startOfWeek, calendar) {
-  for (let i = 1; i <= 5; i++) {
-    // Monday to Friday
-    const eventDate = new Date(startOfWeek);
-    eventDate.setDate(startOfWeek.getDate() + i);
-    createSingleEvent(event, eventDate, calendar);
-  }
-}
-
-function createEvent(event, startOfWeek, calendar) {
-  const dayOffset = daysOfWeek[event.day];
-  const eventDate = new Date(startOfWeek);
-  eventDate.setDate(startOfWeek.getDate() + dayOffset);
-  createSingleEvent(event, eventDate, calendar);
-}
-
-function createSingleEvent(event, eventDate, calendar) {
-  const startTime = parseTime(event.startTime, eventDate);
-  const endTime = new Date(startTime);
-  endTime.setMinutes(endTime.getMinutes() + event.duration);
-
-  // Check if event already exists
-  if (!isEventExists(calendar, event.title, startTime, endTime)) {
-    calendar.createEvent(event.title, startTime, endTime);
-  }
-}
-
-function parseTime(timeString, date) {
-  const timeParts = timeString.split(":");
-  const parsedDate = new Date(date);
-  parsedDate.setHours(timeParts[0], timeParts[1]);
-  return parsedDate;
 }
 
 function isEventExists(calendar, title, startTime, endTime) {
