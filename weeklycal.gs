@@ -1,5 +1,6 @@
 function createWeeklyTemplate() {
-  const calendarId = "talk@nan.do"; // Replace with your Calendar ID
+  const properties = PropertiesService.getScriptProperties();
+  const calendarId = properties.getProperty("CALENDAR_ID"); // Get Calendar ID from project properties
   const calendar = CalendarApp.getCalendarById(calendarId);
 
   const events = [
