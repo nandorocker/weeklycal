@@ -3,13 +3,16 @@ function createWeeklyTemplate() {
   const calendar = CalendarApp.getCalendarById(calendarId);
 
   const events = [
-    // Daily events
+    // Daily events with an exception for Thursday
     {
       title: "☀️ Morning Routine",
       day: "Weekdays",
       startTime: "09:30",
       duration: 150,
-    }, // 2.5 hours
+      exceptions: {
+        Thursday: { duration: 75 }, // Different duration on Thursday
+      },
+    },
     { title: "🍽️ Lunch", day: "Weekdays", startTime: "12:00", duration: 45 },
     { title: "🍽️ Dinner", day: "Weekdays", startTime: "19:30", duration: 60 },
     {
@@ -53,49 +56,7 @@ function createWeeklyTemplate() {
   events.forEach((event) => {
     const dayOffset = daysOfWeek[event.day];
 
-    if (dayOffset === -2) {
-      // Loop through weekdays only (Monday to Friday)
-      for (let i = 1; i <= 5; i++) {
-        const eventDate = new Date(startOfWeek);
-        eventDate.setDate(startOfWeek.getDate() + i);
-
-        const startTime = new Date(eventDate);
-        startTime.setHours(
-          event.startTime.split(":")[0],
-          event.startTime.split(":")[1]
-        );
-
-        const endTime = new Date(startTime);
-        endTime.setMinutes(endTime.getMinutes() + event.duration);
-
-        // Check if event already exists
-        if (!isEventExists(calendar, event.title, startTime, endTime)) {
-          calendar.createEvent(event.title, startTime, endTime);
-          // Logger.log('Event Title:' + event.title + " | Start Time: " + startTime + " | End Time: " + endTime);
-        }
-      }
-    } else if (dayOffset === -1) {
-      // Loop through weekdays only (Monday to Friday)
-      for (let i = 1; i <= 5; i++) {
-        const eventDate = new Date(startOfWeek);
-        eventDate.setDate(startOfWeek.getDate() + i);
-
-        const startTime = new Date(eventDate);
-        startTime.setHours(
-          event.startTime.split(":")[0],
-          event.startTime.split(":")[1]
-        );
-
-        const endTime = new Date(startTime);
-        endTime.setMinutes(endTime.getMinutes() + event.duration);
-
-        // Check if event already exists
-        if (!isEventExists(calendar, event.title, startTime, endTime)) {
-          calendar.createEvent(event.title, startTime, endTime);
-          // Logger.log('Event Title:' + event.title + " | Start Time: " + startTime + " | End Time: " + endTime);
-        }
-      }
-    } else {
+    const handleEventCreation = (dayOffset, customDuration = null) => {
       const eventDate = new Date(startOfWeek);
       eventDate.setDate(startOfWeek.getDate() + dayOffset);
 
@@ -106,13 +67,39 @@ function createWeeklyTemplate() {
       );
 
       const endTime = new Date(startTime);
-      endTime.setMinutes(endTime.getMinutes() + event.duration);
+      endTime.setMinutes(
+        endTime.getMinutes() + (customDuration || event.duration)
+      );
 
       // Check if event already exists
       if (!isEventExists(calendar, event.title, startTime, endTime)) {
         calendar.createEvent(event.title, startTime, endTime);
         // Logger.log('Event Title:' + event.title + " | Start Time: " + startTime + " | End Time: " + endTime);
       }
+    };
+    if (dayOffset === -2) {
+      // Loop through weekdays only (monday through friday)
+      for (let i = 1; i <= 5; i++) {
+        const currentDayOfWeek = Object.keys(daysOfWeek)[i];
+        const customDuration =
+          event.exceptions && event.exceptions[currentDayOfWeek]?.duration;
+
+        handleEventCreation(i, customDuration);
+      }
+    } else if (dayOffset === -1) {
+      // Loop through every day
+      for (let i = 1; i <= 7; i++) {
+        const currentDayOfWeek = Object.keys(daysOfWeek)[i];
+        const customDuration =
+          event.exceptions && event.exceptions[currentDayOfWeek]?.duration;
+
+        handleEventCreation(i, customDuration);
+      }
+    } else {
+      const customDuration =
+        event.exceptions &&
+        event.exceptions[Object.keys(daysOfWeek)[dayOffset]]?.duration;
+      handleEventCreation(dayOffset, customDuration);
     }
   });
 }
